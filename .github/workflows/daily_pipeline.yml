@@ -3,7 +3,9 @@ on:
   schedule:
     # 05:43 KST. 정각은 전 세계 워크플로가 몰려 큐가 가장 밀리므로 분 단위를 비켜 둔다.
     # 스크립트가 datetime.now(KST) 기준으로 "어제"를 잡으므로 KST 자정(15:00 UTC) 이후이기만 하면 된다.
-    - cron: "43 20 * * *"
+    # 03:00 KST. GitHub의 schedule 트리거는 베스트에포트라 매일 2~5시간 밀리므로,
+    # 09:15 KST 알림 전에 끝나도록 충분한 여유를 두고 앞당겨 잡는다.
+    - cron: "0 18 * * *"
   workflow_dispatch:
     inputs:
       backfill_mode:
