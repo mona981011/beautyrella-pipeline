@@ -1,0 +1,37 @@
+name: Backfill Meta Region
+# 메타 지역별(시/도) 데이터만 소급 적재한다. 기존 메타·연령 테이블은 건드리지 않는다.
+on:
+  workflow_dispatch:
+    inputs:
+      backfill_start:
+        description: "시작일 (YYYY-MM-DD)"
+        required: true
+        default: "2026-02-23"
+      backfill_end:
+        description: "종료일 (YYYY-MM-DD)"
+        required: true
+      dry_run:
+        description: "true면 적재하지 않고 결과만 출력"
+        required: false
+        default: "true"
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install requests google-cloud-bigquery
+      - uses: google-github-actions/auth@v2
+        with:
+          credentials_json: "${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}"
+      - name: 지역별 소급 적재
+        env:
+          META_ACCESS_TOKEN: "${{ secrets.META_ACCESS_TOKEN }}"
+          META_AD_ACCOUNT_ID: "${{ secrets.META_AD_ACCOUNT_ID }}"
+          BACKFILL_MODE: "true"
+          BACKFILL_START: "${{ github.event.inputs.backfill_start }}"
+          BACKFILL_END: "${{ github.event.inputs.backfill_end }}"
+          DRY_RUN: "${{ github.event.inputs.dry_run }}"
+        run: python fetch_meta_ads_region.py
