@@ -16,12 +16,15 @@ ROLLING_DAYS = int(os.environ.get("ROLLING_DAYS", "7"))
 
 def fetch_meta_ads_age(since, until):
     url = f"https://graph.facebook.com/v19.0/{AD_ACCOUNT_ID}/insights"
+    # 대만 앱 광고가 같은 계정에서 캠페인만 달리해 집행되므로, 계정 단위로 받으면
+    # 국내/대만을 가를 수 없다. 캠페인 단위로 받아 campaign_name 을 함께 적재한다.
+    # 연령별로 합산하면 기존 계정 단위 수치와 같다.
     params = {
         "access_token": ACCESS_TOKEN,
         "time_range": json.dumps({"since": since, "until": until}),
-        "fields": "impressions,clicks,spend,actions",
+        "fields": "campaign_name,impressions,clicks,spend,actions",
         "breakdowns": "age",
-        "level": "account",
+        "level": "campaign",
         "limit": 500,
     }
     response = requests.get(url, params=params)
@@ -33,6 +36,7 @@ def fetch_meta_ads_age(since, until):
     for item in data.get("data", []):
         rows.append({
             "date": since,
+            "campaign_name": item.get("campaign_name", ""),
             "age_range": item.get("age", "Unknown"),
             "impressions": int(item.get("impressions", 0)),
             "clicks": int(item.get("clicks", 0)),
@@ -55,6 +59,7 @@ def upload_to_bigquery(rows):
     table_id = "beautyrella-dashboard.beautyrella_ads.meta_ads_age"
     schema = [
         bigquery.SchemaField("date", "DATE"),
+        bigquery.SchemaField("campaign_name", "STRING"),
         bigquery.SchemaField("age_range", "STRING"),
         bigquery.SchemaField("spend", "FLOAT"),
         bigquery.SchemaField("installs", "INTEGER"),
